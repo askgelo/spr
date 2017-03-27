@@ -1,0 +1,149 @@
+﻿@using src.Models
+@using src.App_Code
+@model Node
+
+<style>
+    .div-row {
+        padding-top: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid;
+    }
+    .div-manage {
+         position: relative;
+         height: 120px; 
+         min-width: 200px;
+    }
+    .div-btn-add {
+        display: inline-block;
+        left: 0px;
+        height: 100%;
+        width: 100px;
+        vertical-align: top;
+    }
+    .div-list-nodes {
+        display: inline-block;
+        position: absolute;
+        left: 100px;
+        height: 100px;
+        width: auto;
+        min-width: 100px;
+        overflow-y: auto;
+    }
+    .element-node {
+        text-align: justify;
+        padding-top: 7px;
+        padding-bottom: 7px;
+        padding-left: 10px;
+        cursor: pointer;
+        display: inline-block; 
+        width: 120px; 
+    }
+</style>
+
+<script>
+    function clickNode(e) {
+        if (activeNode != undefined) {
+            var toggler = activeNode.children('span.tree-toggler');
+            if (toggler.length == 1 && toggler.hasClass('glyphicon-menu-right')) {
+                toggler.toggleClass('glyphicon-menu-down');
+                toggler.toggleClass('glyphicon-menu-right');
+                activeNode.parent().children('ul.tree').toggle(300);
+            }
+        }
+        var key = $(this)[0].attributes["key"].value;
+        var node = $('[id="' + key + '"]');
+        
+        node.click();
+    };
+    jQuery(function ($) {
+        $('#btnAdd').click(function (e) {
+            e.preventDefault();
+
+            if (activeNode != undefined) {
+                var id = activeNode[0].attributes["id"].value;
+                $.getJSON('/Tree/Add?path=' + encodeURIComponent(id),
+                    function (data) {
+                        // tree
+                        var nodeTree = activeNode.parent().children('ul.tree');
+
+                        if (nodeTree[0] === undefined) {
+                            // update li
+                            var containerElement = document.createElement("div");
+                            containerElement.innerHTML = data['nodeTree'];
+                            activeNode = activeNode.parent(); // li
+                            activeNode[0].innerHTML = containerElement.children[0].innerHTML;
+
+                            // add event to child: li.ul.li.div
+                            activeNode.children().last().children().first().children().first().click(updateDataNode);
+                            // update li.div
+                            activeNode = activeNode.children().first();
+                            // update set active
+                            activeNode.toggleClass('active');
+                            // update events
+                            activeNode.click(updateDataNode);
+                            activeNode.dblclick(toggleDiv);
+                            activeNode.children().first().click(toggleSpan);
+                            
+                            // nodeTree.push(containerElement.children[0]);
+                        }
+                        else {
+                            var containerElement = document.createElement("div");
+                            containerElement.innerHTML = data['nodeTree'];
+                            nodeTree[0].appendChild(containerElement.children[0]);
+                            nodeTree.children().last().children().first().click(updateDataNode);
+                        }
+
+                        // list
+                        var containerElement = document.createElement("div");
+                        containerElement.innerHTML = data['nodeList'];
+
+                        var divChildrenNode = $('#node-children');
+                        divChildrenNode[0].appendChild(containerElement.children[0]);
+                        divChildrenNode.children().last().click(clickNode);
+                        //$('div.element-node').click(clickNode);
+                    }
+                );
+            }
+        })
+    })
+    jQuery(function ($) {
+        $('div.element-node').click(clickNode);
+    })
+</script>
+@{
+    bool emptyModel = Model == null;
+    string pathNode = Model?.GetPath();
+    string modelData = Model?.Data;
+}
+
+<div class="div-row" style="height: 60px">
+    <button @{if (emptyModel) { <text>disabled</text> } } style="float: right">Удалить</button>
+    @Html.Hidden("path", pathNode)
+    <div style="height: 40px; overflow: hidden">@pathNode</div>
+</div>
+
+<div class="div-row div-manage">
+    <div class="div-btn-add">
+        <button id="btnAdd" value="Add">Добавить</button>
+    </div>
+    <div  id="node-children" class="div-list-nodes">
+        @if (Model?.Count > 0)
+        {
+            foreach (var node in Model)
+            {
+                @ListHelper.CreateElement(node);
+            }
+        }
+    </div>
+</div>
+
+@using (Html.BeginForm("Save", "Tree", FormMethod.Post))
+{
+    <div class="div-row" style="top: 170px; bottom: 50px; left: 20px; right: 20px; position: absolute">
+        @Html.TextArea("data", modelData, new { style = "height: 100%; width: 100%; overflow: auto" })
+    </div>
+
+    <div style="bottom: 10px; position: absolute">
+        <input type="submit" value="Save" />
+    </div>
+}

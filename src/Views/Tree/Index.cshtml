@@ -1,0 +1,131 @@
+﻿@{
+    Layout = "_Layout";
+}
+@using src.Models
+@using src.App_Code
+@model Node
+<!doctype html>
+<html>
+<head>
+    <title>Esm</title>
+    <meta charset="utf-8" />
+    @*<script type="text/javascript" src="jquery.js"></script>*@
+
+    @*<meta name="viewport" content="width=device-width">*@
+    <style>
+          /*
+            overflow:auto;
+            overflow-y: scroll; 
+            overflow-x: hidden;
+          */
+
+        .left-tree {
+            position: absolute;
+            top: 0;
+            width: 25%;
+            overflow-y: scroll; 
+            overflow-x: hidden;
+            height: 100%;
+        }
+
+        .right-data {
+            left: 25%;
+            width: 75%;
+            position: absolute;
+            top: 0;
+            height: 100%;
+        }
+
+        .nav-list {
+            padding-left: 21px;
+            margin-bottom: 0;
+        }
+        .element-tree {
+            text-align: justify;
+            padding-top: 7px;
+            padding-bottom: 7px;
+            cursor: pointer;
+        }
+        .node-children {
+            padding-left: 7px;
+        }
+        .node-simple {
+            padding-left: 21px;
+        }
+        .active {
+            background: rgb(190, 199, 219);
+        }
+        /*.a-active {
+            text-decoration: initial;
+            outline: initial;
+        }*/
+
+        /*.nav-list-main{padding-left:0px;padding-right:0px;margin-bottom:0;}*/
+    </style>
+</head>
+<body>
+    <script>
+        function toggle(toggler, ulToggler) {
+            toggler.toggleClass('glyphicon-menu-down');
+            toggler.toggleClass('glyphicon-menu-right');
+            ulToggler.parent().children('ul.tree').toggle(300);
+        }
+
+        function toggleSpan() {
+            toggle($(this), $(this).parent());
+        }
+
+        $(document).ready(function () {
+            $('span.tree-toggler').click(toggleSpan);
+        });
+
+        function toggleDiv(e) {
+            e.preventDefault();
+            var toggler = $(this).children('span.tree-toggler');
+            if (toggler.length == 1) {
+                toggle(toggler, $(this));
+            }
+        }
+
+        jQuery(function ($) {
+            $('div.nav-header').dblclick(toggleDiv);
+        })
+
+        var activeNode;
+
+        function updateDataNode(e) {
+            if (activeNode != undefined) {
+                activeNode.toggleClass('active');
+            }
+            console.debug('clicked!');
+            activeNode = $(this);
+            activeNode.toggleClass('active');
+            e.preventDefault();
+            $.ajax({
+                url: '/Tree/Node?path=' + activeNode[0].attributes["id"].value,
+                success: function (data) {
+                    $('#container').html(data);
+                }
+            });
+        }
+
+        jQuery(function ($) {
+            $('div.nav-header').click(updateDataNode);
+        })
+    </script>
+
+
+    <div class="left-tree" onselectstart="return false" onmousedown="return false">
+        <div class="row">
+            <div class="well" style="padding: 8px 21px 0 0; margin-bottom: 0">
+                @TreeHelper.CreateTree(Html, Model)
+            </div>
+        </div>
+    </div>
+    <div class="right-data">
+        <div id="container" style="padding-left: 20px; padding-right: 20px; height: 100%">
+            @Html.Partial("_NodeData", Model.Active)
+        </div>
+    </div>
+</body>
+</html>
